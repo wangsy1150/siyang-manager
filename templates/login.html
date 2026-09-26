@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#FFF8E7">
+  <title>登录 · 个人管理台</title>
+  <!-- 复用主页那套样式表：配色、按钮、输入框全都保持一致，
+       只在其后面追加 auth 段落（见 static/css/style.css 末尾） -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="auth-body">
+
+  <!--
+    登录 / 注册页。
+    两个表单放在同一张卡片里，靠顶部的两个 tab 切换 ——
+    好处是注册完不用跳页，用户填过的东西都还在眼前。
+  -->
+  <main class="auth">
+    <section class="auth__card card">
+
+      <!-- 品牌区：和主页侧栏的 brand 是同一套视觉语言 -->
+      <header class="auth__brand">
+        <span class="auth__mark" aria-hidden="true">思</span>
+        <h1 class="auth__title">个人管理台</h1>
+        <p class="auth__sub">登录后接着走今天的节奏</p>
+      </header>
+
+      <!-- tab 切换：用 aria-selected 让屏幕阅读器也知道当前在哪一栏 -->
+      <div class="auth__tabs" role="tablist" aria-label="登录或注册">
+        <button class="auth__tab is-active" type="button" role="tab"
+                id="tab-login" data-tab="login" aria-selected="true">登录</button>
+        <button class="auth__tab" type="button" role="tab"
+                id="tab-register" data-tab="register" aria-selected="false">注册</button>
+      </div>
+
+      <!-- ---------- 登录表单 ---------- -->
+      <form class="auth__form" id="form-login" data-form="login" autocomplete="on" novalidate>
+        <label class="field field--wide">
+          <span>用户名</span>
+          <input class="input" type="text" name="username" autocomplete="username"
+                 placeholder="你的用户名" required>
+        </label>
+        <label class="field field--wide">
+          <span>密码</span>
+          <input class="input" type="password" name="password" autocomplete="current-password"
+                 placeholder="至少 6 位" required>
+        </label>
+        <button class="btn btn--primary auth__submit" type="submit">登录</button>
+      </form>
+
+      <!-- ---------- 注册表单 ---------- -->
+      <form class="auth__form" id="form-register" data-form="register" autocomplete="off" novalidate hidden>
+        <label class="field field--wide">
+          <span>用户名</span>
+          <input class="input" type="text" name="username" autocomplete="username"
+                 placeholder="2–20 个字符" required>
+        </label>
+        <label class="field field--wide">
+          <span>密码</span>
+          <input class="input" type="password" name="password" autocomplete="new-password"
+                 placeholder="至少 6 位" required>
+        </label>
+        <label class="field field--wide">
+          <span>确认密码</span>
+          <input class="input" type="password" name="password2" autocomplete="new-password"
+                 placeholder="和上面输一样" required>
+        </label>
+        <button class="btn btn--primary auth__submit" type="submit">注册并登录</button>
+      </form>
+
+      <!--
+        演示账号提示。
+        首次运行后端会用它灌一份示例数据，所以这里直接写出来方便验收。
+        ⚠️ 部署到公网以后建议删掉这块，或把 app.py 里的 DEMO_PASSWORD 改掉。
+      -->
+      <p class="auth__note">
+        演示账号：<strong>{{ demo_user }}</strong> / <strong>123456</strong>
+        <span class="auth__note-sub">想从干净状态开始就点「注册」——新账号不带任何模拟数据。</span>
+      </p>
+    </section>
+  </main>
+
+  <!-- 轻量操作反馈 -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+</body>
+</html>

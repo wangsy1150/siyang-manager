@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#FFF8E7">
+  <title>思洋 · 个人管理台</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!--
+    桌面端：贴浏览器最左侧的固定导航（aside）
+    移动端：同一套 DOM，靠 CSS 变成底部 tab 栏 —— 不写两份导航，避免状态不同步
+  -->
+  <aside class="sidebar">
+    <div class="brand">
+      <!-- 这里的名字是首屏兜底；app.js 的 init() 会用 OWNER 常量再同步一遍，
+           以后改名只动 app.js 里那一行就够了 -->
+      <span class="brand__mark" aria-hidden="true">思</span>
+      <span class="brand__text">
+        <strong>思洋管理台</strong>
+        <em>Personal Dashboard</em>
+      </span>
+    </div>
+
+    <nav class="nav" id="nav" aria-label="主导航">
+      <button class="nav__item" type="button" data-page="home"      aria-current="false"><span class="nav__ico" aria-hidden="true">🏠</span><span class="nav__label">首页仪表盘</span></button>
+      <button class="nav__item" type="button" data-page="plan"      aria-current="false"><span class="nav__ico" aria-hidden="true">📅</span><span class="nav__label">每日计划</span></button>
+      <button class="nav__item" type="button" data-page="todo"      aria-current="false"><span class="nav__ico" aria-hidden="true">📋</span><span class="nav__label">待办清单</span></button>
+      <button class="nav__item" type="button" data-page="english"   aria-current="false"><span class="nav__ico" aria-hidden="true">📚</span><span class="nav__label">英语学习</span></button>
+      <button class="nav__item" type="button" data-page="fitness"   aria-current="false"><span class="nav__ico" aria-hidden="true">💪</span><span class="nav__label">锻炼身体</span></button>
+      <button class="nav__item" type="button" data-page="meal"      aria-current="false"><span class="nav__ico" aria-hidden="true">🍱</span><span class="nav__label">好好吃饭</span></button>
+      <button class="nav__item" type="button" data-page="checkin"   aria-current="false"><span class="nav__ico" aria-hidden="true">✍️</span><span class="nav__label">每日打卡</span></button>
+      <button class="nav__item" type="button" data-page="media"     aria-current="false"><span class="nav__ico" aria-hidden="true">📱</span><span class="nav__label">自媒体</span></button>
+      <button class="nav__item" type="button" data-page="memo"      aria-current="false"><span class="nav__ico" aria-hidden="true">📝</span><span class="nav__label">备忘录</span></button>
+    </nav>
+
+    <p class="sidebar__foot">列表数据只存在本次会话里<br>刷新后回到初始示例</p>
+  </aside>
+
+  <main class="main" id="main">
+
+    <!-- ============ 1. 首页仪表盘 ============ -->
+    <section class="page" data-page="home" hidden>
+      <header class="page__head">
+        <h1 class="page__title" id="greeting">你好，思洋</h1>
+        <p class="page__sub" id="today">—</p>
+      </header>
+
+      <!-- 手机/窄屏 2 张，宽屏（≥1200px）自动补齐成 4 张 -->
+      <div class="stats">
+        <article class="card stat">
+          <span class="stat__ico" aria-hidden="true">📋</span>
+          <div class="stat__body">
+            <p class="stat__label">今日待办</p>
+            <p class="stat__value" id="stat-todo">0</p>
+          </div>
+        </article>
+        <article class="card stat">
+          <span class="stat__ico" aria-hidden="true">✅</span>
+          <div class="stat__body">
+            <p class="stat__label">已完成</p>
+            <p class="stat__value" id="stat-done">0</p>
+          </div>
+        </article>
+        <article class="card stat stat--extra">
+          <span class="stat__ico" aria-hidden="true">✍️</span>
+          <div class="stat__body">
+            <p class="stat__label">打卡记录</p>
+            <p class="stat__value" id="stat-checkin">0</p>
+          </div>
+        </article>
+        <article class="card stat stat--extra">
+          <span class="stat__ico" aria-hidden="true">📚</span>
+          <div class="stat__body">
+            <p class="stat__label">今日单词</p>
+            <p class="stat__value" id="stat-word">0</p>
+          </div>
+        </article>
+      </div>
+
+      <h2 class="section__title">今日能量 <span class="section__hint">随手翻一句，只留一句</span></h2>
+      <div class="quotes" id="quotes"></div>
+    </section>
+
+    <!-- ============ 2. 每日计划 ============ -->
+    <section class="page" data-page="plan" hidden>
+      <header class="page__head">
+        <h1 class="page__title">📅 每日计划</h1>
+        <p class="page__sub">把一天切成几段，每段只放一件事。</p>
+      </header>
+
+      <form class="form" data-form="plan" autocomplete="off">
+        <label class="field">
+          <span>时段</span>
+          <input class="input" type="text" name="time" placeholder="08:00 – 09:40">
+        </label>
+        <label class="field field--wide">
+          <span>要做的事</span>
+          <input class="input" type="text" name="task" placeholder="例如：微积分（上）第二章习题">
+        </label>
+        <label class="field">
+          <span>分类标签</span>
+          <input class="input" type="text" name="tag" placeholder="上课 / 组织 / 考研">
+        </label>
+        <button class="btn btn--primary" type="submit">＋ 添加</button>
+      </form>
+
+      <ul class="list" id="list-plans"></ul>
+    </section>
+
+    <!-- ============ 3. 待办清单 ============ -->
+    <section class="page" data-page="todo" hidden>
+      <header class="page__head">
+        <h1 class="page__title">📋 待办清单</h1>
+        <p class="page__sub">勾掉一件，心里就轻一点。</p>
+      </header>
+
+      <h2 class="section__title">今日待办</h2>
+      <form class="form" data-form="todo" autocomplete="off">
+        <label class="field field--wide">
+          <span>新增待办</span>
+          <input class="input" type="text" name="text" placeholder="今天必须完成的一件事…">
+        </label>
+        <button class="btn btn--primary" type="submit">＋ 添加</button>
+      </form>
+
+      <ul class="list" id="list-todos"></ul>
+    </section>
+
+    <!-- ============ 4. 英语学习 ============ -->
+    <section class="page" data-page="english" hidden>
+      <header class="page__head">
+        <h1 class="page__title">📚 英语学习</h1>
+        <p class="page__sub">一天几个词，一年就是一座小仓库。</p>
+      </header>
+
+      <h2 class="section__title">今日单词</h2>
+      <form class="form" data-form="word" autocomplete="off">
+        <label class="field">
+          <span>单词</span>
+          <input class="input" type="text" name="word" placeholder="persist">
+        </label>
+        <label class="field">
+          <span>音标（可选）</span>
+          <input class="input" type="text" name="phonetic" placeholder="/pəˈsɪst/">
+        </label>
+        <label class="field field--wide">
+          <span>释义</span>
+          <input class="input" type="text" name="meaning" placeholder="v. 坚持；持续存在">
+        </label>
+        <button class="btn btn--primary" type="submit">＋ 添加</button>
+      </form>
+
+      <div class="grid grid--words" id="list-words"></div>
+    </section>
+
+    <!-- ============ 5. 锻炼身体 ============ -->
+    <section class="page" data-page="fitness" hidden>
+      <header class="page__head">
+        <h1 class="page__title">💪 锻炼身体</h1>
+        <p class="page__sub">先练起来，动作标准比重量重要。</p>
+      </header>
+
+      <h2 class="section__title">今日训练计划</h2>
+      <form class="form" data-form="workout" autocomplete="off">
+        <label class="field">
+          <span>项目名称</span>
+          <input class="input" type="text" name="name" placeholder="深蹲">
+        </label>
+        <label class="field field--sm">
+          <span>时长（可选）</span>
+          <input class="input" type="text" name="duration" placeholder="15 分钟">
+        </label>
+        <label class="field field--sm">
+          <span>组数（可选）</span>
+          <input class="input" type="text" name="sets" placeholder="4 组 × 15 次">
+        </label>
+        <label class="field field--wide">
+          <span>备注 / 要领</span>
+          <input class="input" type="text" name="note" placeholder="膝盖别内扣，起身呼气">
+        </label>
+        <button class="btn btn--primary" type="submit">＋ 添加</button>
+      </form>
+
+      <ul class="list" id="list-workouts"></ul>
+    </section>
+
+    <!-- ============ 6. 好好吃饭 ============ -->
+    <section class="page" data-page="meal" hidden>
+      <header class="page__head">
+        <h1 class="page__title">🍱 好好吃饭</h1>
+        <p class="page__sub">吃顺了，情绪和状态都会跟着稳。</p>
+      </header>
+
+      <h2 class="section__title">今日食谱</h2>
+      <form class="form" data-form="meal" autocomplete="off">
+        <label class="field field--sm">
+          <span>餐次</span>
+          <!-- datalist：可以点选常用餐次，也可以自己输入 -->
+          <input class="input" type="text" name="meal" list="meal-options" placeholder="早餐">
+          <datalist id="meal-options">
+            <option value="早餐"></option>
+            <option value="午餐"></option>
+            <option value="晚餐"></option>
+            <option value="加餐"></option>
+          </datalist>
+        </label>
+        <label class="field field--wide">
+          <span>菜单</span>
+          <input class="input" type="text" name="menu" placeholder="杂粮饭 + 香煎鸡胸 + 西兰花">
+        </label>
+        <label class="field field--sm">
+          <span>热量 kcal</span>
+          <input class="input" type="number" name="kcal" min="0" step="10" placeholder="650">
+        </label>
+        <label class="field field--sm">
+          <span>标签（可选）</span>
+          <input class="input" type="text" name="tag" placeholder="减脂 / 高蛋白">
+        </label>
+        <button class="btn btn--primary" type="submit">＋ 添加</button>
+      </form>
+
+      <div class="grid grid--meals" id="list-meals"></div>
+    </section>
+
+    <!-- ============ 7. 每日打卡 ============ -->
+    <section class="page" data-page="checkin" hidden>
+      <header class="page__head">
+        <h1 class="page__title">✍️ 每日打卡</h1>
+        <p class="page__sub">不用写得好看，写得真实就行。</p>
+      </header>
+
+      <h2 class="section__title">写下一句今天的心情</h2>
+      <form class="form" data-form="checkin" autocomplete="off">
+        <label class="field field--wide">
+          <span>今天的心情</span>
+          <input class="input" type="text" name="text" placeholder="今天最想记住的一件小事…">
+        </label>
+        <button class="btn btn--primary" type="submit">✍️ 打卡</button>
+      </form>
+
+      <ul class="list" id="list-checkins"></ul>
+    </section>
+
+    <!-- ============ 8. 自媒体 ============ -->
+    <section class="page" data-page="media" hidden>
+      <header class="page__head">
+        <h1 class="page__title">📱 自媒体</h1>
+        <p class="page__sub">先稳定更新，再谈数据。</p>
+      </header>
+
+      <h2 class="section__title">内容创作</h2>
+      <form class="form" data-form="media" autocomplete="off">
+        <label class="field field--wide">
+          <span>内容标题</span>
+          <input class="input" type="text" name="title" placeholder="从零手写一个 Python 爬虫：完整链路">
+        </label>
+        <!-- 平台 / 状态用 select：值可控，后面才好做统计和颜色标记 -->
+        <label class="field field--sm">
+          <span>平台</span>
+          <!-- 思洋实际在更的两个平台放前面，其余保留备用；
+               改动这里要同步 app.js 里 renderMedia() 的 selectHtml 数组 -->
+          <select class="input" name="platform">
+            <option value="CSDN">CSDN</option>
+            <option value="知乎">知乎</option>
+            <option value="B站">B站</option>
+            <option value="小红书">小红书</option>
+            <option value="抖音">抖音</option>
+            <option value="公众号">公众号</option>
+          </select>
+        </label>
+        <label class="field field--sm">
+          <span>状态</span>
+          <select class="input" name="status">
+            <option value="构思中">构思中</option>
+            <option value="撰写中">撰写中</option>
+            <option value="已发布">已发布</option>
+          </select>
+        </label>
+        <label class="field field--sm">
+          <span>浏览量</span>
+          <input class="input" type="number" name="views" min="0" step="100" placeholder="0">
+        </label>
+        <button class="btn btn--primary" type="submit">＋ 添加</button>
+      </form>
+
+      <ul class="list" id="list-media"></ul>
+    </section>
+
+    <!-- ============ 9. 备忘录 ============ -->
+    <section class="page" data-page="memo" hidden>
+      <header class="page__head">
+        <h1 class="page__title">📝 备忘录</h1>
+        <p class="page__sub">脑子用来想事，不用来记时间。</p>
+      </header>
+
+      <h2 class="section__title">小本本</h2>
+      <form class="form" data-form="memo" autocomplete="off">
+        <label class="field field--sm">
+          <span>时间</span>
+          <input class="input" type="datetime-local" name="time">
+        </label>
+        <label class="field field--wide">
+          <span>备忘内容</span>
+          <input class="input" type="text" name="text" placeholder="把《入党申请书》交给团支书">
+        </label>
+        <button class="btn btn--primary" type="submit">＋ 添加</button>
+      </form>
+
+      <ul class="list" id="list-memos"></ul>
+    </section>
+
+  </main>
+
+  <!-- 轻量操作反馈，避免"点了没反应" -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

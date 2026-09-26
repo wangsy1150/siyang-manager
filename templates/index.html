@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#FFF8E7">
+  <!-- title / 品牌名 / 问候语 统一取 boot.owner，而 boot.owner = 当前登录的用户名 -->
+  <title>{{ boot.owner }} · 个人管理台</title>
+  <!-- url_for 会生成 /static/css/style.css —— Flask 自动把 static/ 目录挂在这个前缀下 -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+  <!--
+    桌面端：贴浏览器最左侧的固定导航（aside）
+    移动端：同一套 DOM，靠 CSS 变成底部 tab 栏 —— 不写两份导航，避免状态不同步
+
+    这 9 个按钮现在由后端 NAV 列表循环生成：
+    加一个导航项只改 app.py，这里一行都不用动。
+  -->
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand__mark" aria-hidden="true">{{ boot.owner[0] }}</span>
+      <span class="brand__text">
+        <strong>{{ boot.owner }}管理台</strong>
+        <em>Personal Dashboard</em>
+      </span>
+    </div>
+
+    <nav class="nav" id="nav" aria-label="主导航">
+      {% for item in boot.nav %}
+      <button class="nav__item" type="button" data-page="{{ item.key }}" aria-current="false"><span class="nav__ico" aria-hidden="true">{{ item.icon }}</span><span class="nav__label">{{ item.label }}</span></button>
+      {% endfor %}
+    </nav>
+
+    <!--
+      侧栏底部：当前登录的用户 + 退出。
+      boot.owner 就是登录的用户名（后端由 session 还原），
+      所以首页标题、品牌名、这里显示的名字是同一个来源，不会出现「标题叫我 A、侧栏叫我 B」。
+    -->
+    <div class="sidebar__user">
+      <span class="sidebar__user-mark" aria-hidden="true">{{ boot.owner[0] }}</span>
+      <span class="sidebar__user-text">
+        <strong>{{ boot.owner }}</strong>
+        <em>已登录</em>
+      </span>
+      <a class="btn btn--sm btn--ghost sidebar__logout" href="{{ url_for('logout') }}">退出</a>
+    </div>
+
+    <p class="sidebar__foot">数据已存进 SQLite（simon.db）<br>关掉服务再启动，内容还在</p>
+  </aside>
+
+  <main class="main" id="main">
+
+    <!-- ============ 1. 首页仪表盘 ============ -->
+    <section class="page" data-page="home" hidden>
+      <header class="page__head">
+        <!-- 首屏由后端渲染好，JS 加载后再同步一次（两边算出来是一样的） -->
+        <h1 class="page__title" id="greeting">{{ boot.greeting }}</h1>
+        <p class="page__sub" id="today">{{ boot.date_text }}</p>
+      </header>
+
+      <!-- 手机/窄屏 2 张，宽屏（≥1200px）自动补齐成 4 张 -->
+      <div class="stats">
+        <article class="card stat">
+          <span class="stat__ico" aria-hidden="true">📋</span>
+          <div class="stat__body">
+            <p class="stat__label">今日待办</p>
+            <p class="stat__value" id="stat-todo">{{ boot.stats.todo }}</p>
+          </div>
+        </article>
+        <article class="card stat">
+          <span class="stat__ico" aria-hidden="true">✅</span>
+          <div class="stat__body">
+            <p class="stat__label">已完成</p>
+            <p class="stat__value" id="stat-done">{{ boot.stats.done }}</p>
+          </div>
+        </article>
+        <article class="card stat stat--extra">
+          <span class="stat__ico" aria-hidden="true">✍️</span>
+          <div class="stat__body">
+            <p class="stat__label">打卡记录</p>
+            <p class="stat__value" id="stat-checkin">{{ boot.stats.checkin }}</p>
+          </div>
+        </article>
+        <article class="card stat stat--extra">
+          <span class="stat__ico" aria-hidden="true">📚</span>
+          <div class="stat__body">
+            <p class="stat__label">今日单词</p>
+            <p class="stat__value" id="stat-word">{{ boot.stats.word }}</p>
+          </div>
+        </article>
+      </div>
+
+      <h2 class="section__title">今日能量 <span class="section__hint">随手翻一句，只留一句</span></h2>
+      <!-- 语录也由后端给：模板直出，JS 加载后会再渲染一遍（内容一致，不会闪） -->
+      <div class="quotes" id="quotes">
+        {% for q in boot.quotes %}
+        <figure class="quote">
+          <blockquote class="quote__text">{{ q.text }}</blockquote>
+          <figcaption class="quote__from">{{ q.from }}</figcaption>
+        </figure>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- ============ 2. 每日计划 ============ -->
+    <section class="page" data-page="plan" hidden>
+      <header class="page__head">
+        <h1 class="page__title">📅 每日计划</h1>
+        <p class="page__sub">把一天切成几段，每段只放一件事。</p>
+      </header>
+
+      <form class="form" data-form="plan" autocomplete="off">
+        <label class="field">
+          <span>时段</span>
+          <input class="input" type="text" name="time" placeholder="08:00 – 09:40">
+        </label>
+        <label class="field field--wide">
+          <span>要做的事</span>
+          <input class="input" type="text" name="task" placeholder="例如：微积分（上）第二章习题">
+        </label>
+        <label class="field">
+          <span>分类标签</span>
+          <input class="input" type="text" name="tag" placeholder="上课 / 组织 / 考研">
+        </label>
+        <button class="btn btn--primary" type="submit">＋ 添加</button>
+      </form>
+
+      <ul class="list" id="list-plans"></ul>
+    </section>
+
+    <!-- ============ 3. 待办清单 ============ -->
+    <section class="page" data-page="todo" hidden>
+      <header class="page__head">
+        <h1 class="page__title">📋 待办清单</h1>
+        <p class="page__sub">勾掉一件，心里就轻一点。</p>
+      </header>
+
+      <h2 class="section__title">今日待办</h2>
+      <form class="form" data-form="todo" autocomplete="off">
+        <label class="field field--wide">
+          <span>新增待办</span>
+          <input class="input" type="text" name="text" placeholder="今天必须完成的一件事…">
+        </label>
+        <button class="btn btn--primary" type="submit">＋ 添加</button>
+      </form>
+
+      <ul class="list" id="list-todos"></ul>
+    </section>
+
+    <!-- ============ 4. 英语学习 ============ -->
+    <section class="page" data-page="english" hidden>
+      <header class="page__head">
+        <h1 class="page__title">📚 英语学习</h1>
+        <p class="page__sub">一天几个词，一年就是一座小仓库。</p>
+      </header>
+
+      <h2 class="section__title">今日单词</h2>
+      <form class="form" data-form="word" autocomplete="off">
+        <label class="field">
+          <span>单词</span>
+          <input class="input" type="text" name="word" placeholder="persist">
+        </label>
+        <label class="field">
+          <span>音标（可选）</span>
+          <input class="input" type="text" name="phonetic" placeholder="/pəˈsɪst/">
+        </label>
+        <label class="field field--wide">
+          <span>释义</span>
+          <input class="input" type="text" name="meaning" placeholder="v. 坚持；持续存在">
+        </label>
+        <button class="btn btn--primary" type="submit">＋ 添加</button>
+      </form>
+
+      <div class="grid grid--words" id="list-words"></div>
+    </section>
+
+    <!-- ============ 5. 锻炼身体 ============ -->
+    <section class="page" data-page="fitness" hidden>
+      <header class="page__head">
+        <h1 class="page__title">💪 锻炼身体</h1>
+        <p class="page__sub">先练起来，动作标准比重量重要。</p>
+      </header>
+
+      <h2 class="section__title">今日训练计划</h2>
+      <form class="form" data-form="workout" autocomplete="off">
+        <label class="field">
+          <span>项目名称</span>
+          <input class="input" type="text" name="name" placeholder="深蹲">
+        </label>
+        <label class="field field--sm">
+          <span>时长（可选）</span>
+          <input class="input" type="text" name="duration" placeholder="15 分钟">
+        </label>
+        <label class="field field--sm">
+          <span>组数（可选）</span>
+          <input class="input" type="text" name="sets" placeholder="4 组 × 15 次">
+        </label>
+        <label class="field field--wide">
+          <span>备注 / 要领</span>
+          <input class="input" type="text" name="note" placeholder="膝盖别内扣，起身呼气">
+        </label>
+        <button class="btn btn--primary" type="submit">＋ 添加</button>
+      </form>
+
+      <ul class="list" id="list-workouts"></ul>
+    </section>
+
+    <!-- ============ 6. 好好吃饭 ============ -->
+    <section class="page" data-page="meal" hidden>
+      <header class="page__head">
+        <h1 class="page__title">🍱 好好吃饭</h1>
+        <p class="page__sub">吃顺了，情绪和状态都会跟着稳。</p>
+      </header>
+
+      <h2 class="section__title">今日食谱</h2>
+      <form class="form" data-form="meal" autocomplete="off">
+        <label class="field field--sm">
+          <span>餐次</span>
+          <!-- datalist：可以点选常用餐次，也可以自己输入 -->
+          <input class="input" type="text" name="meal" list="meal-options" placeholder="早餐">
+          <datalist id="meal-options">
+            <option value="早餐"></option>
+            <option value="午餐"></option>
+            <option value="晚餐"></option>
+            <option value="加餐"></option>
+          </datalist>
+        </label>
+        <label class="field field--wide">
+          <span>菜单</span>
+          <input class="input" type="text" name="menu" placeholder="杂粮饭 + 香煎鸡胸 + 西兰花">
+        </label>
+        <label class="field field--sm">
+          <span>热量 kcal</span>
+          <input class="input" type="number" name="kcal" min="0" step="10" placeholder="650">
+        </label>
+        <label class="field field--sm">
+          <span>标签（可选）</span>
+          <input class="input" type="text" name="tag" placeholder="减脂 / 高蛋白">
+        </label>
+        <button class="btn btn--primary" type="submit">＋ 添加</button>
+      </form>
+
+      <div class="grid grid--meals" id="list-meals"></div>
+    </section>
+
+    <!-- ============ 7. 每日打卡 ============ -->
+    <section class="page" data-page="checkin" hidden>
+      <header class="page__head">
+        <h1 class="page__title">✍️ 每日打卡</h1>
+        <p class="page__sub">不用写得好看，写得真实就行。</p>
+      </header>
+
+      <h2 class="section__title">写下一句今天的心情</h2>
+      <form class="form" data-form="checkin" autocomplete="off">
+        <label class="field field--wide">
+          <span>今天的心情</span>
+          <input class="input" type="text" name="text" placeholder="今天最想记住的一件小事…">
+        </label>
+        <button class="btn btn--primary" type="submit">✍️ 打卡</button>
+      </form>
+
+      <ul class="list" id="list-checkins"></ul>
+    </section>
+
+    <!-- ============ 8. 自媒体 ============ -->
+    <section class="page" data-page="media" hidden>
+      <header class="page__head">
+        <h1 class="page__title">📱 自媒体</h1>
+        <p class="page__sub">先稳定更新，再谈数据。</p>
+      </header>
+
+      <h2 class="section__title">内容创作</h2>
+      <form class="form" data-form="media" autocomplete="off">
+        <label class="field field--wide">
+          <span>内容标题</span>
+          <input class="input" type="text" name="title" placeholder="从零手写一个 Python 爬虫：完整链路">
+        </label>
+        <!-- 平台 / 状态用 select：值可控，后面才好做统计和颜色标记 -->
+        <label class="field field--sm">
+          <span>平台</span>
+          <!-- 思洋实际在更的两个平台放前面，其余保留备用；
+               改动这里要同步 app.js 里 renderMedia() 的 selectHtml 数组 -->
+          <select class="input" name="platform">
+            <option value="CSDN">CSDN</option>
+            <option value="知乎">知乎</option>
+            <option value="B站">B站</option>
+            <option value="小红书">小红书</option>
+            <option value="抖音">抖音</option>
+            <option value="公众号">公众号</option>
+          </select>
+        </label>
+        <label class="field field--sm">
+          <span>状态</span>
+          <select class="input" name="status">
+            <option value="构思中">构思中</option>
+            <option value="撰写中">撰写中</option>
+            <option value="已发布">已发布</option>
+          </select>
+        </label>
+        <label class="field field--sm">
+          <span>浏览量</span>
+          <input class="input" type="number" name="views" min="0" step="100" placeholder="0">
+        </label>
+        <button class="btn btn--primary" type="submit">＋ 添加</button>
+      </form>
+
+      <ul class="list" id="list-media"></ul>
+    </section>
+
+    <!-- ============ 9. 备忘录 ============ -->
+    <section class="page" data-page="memo" hidden>
+      <header class="page__head">
+        <h1 class="page__title">📝 备忘录</h1>
+        <p class="page__sub">脑子用来想事，不用来记时间。</p>
+      </header>
+
+      <h2 class="section__title">小本本</h2>
+      <form class="form" data-form="memo" autocomplete="off">
+        <label class="field field--sm">
+          <span>时间</span>
+          <input class="input" type="datetime-local" name="time">
+        </label>
+        <label class="field field--wide">
+          <span>备忘内容</span>
+          <input class="input" type="text" name="text" placeholder="把《入党申请书》交给团支书">
+        </label>
+        <button class="btn btn--primary" type="submit">＋ 添加</button>
+      </form>
+
+      <ul class="list" id="list-memos"></ul>
+    </section>
+
+  </main>
+
+  <!-- 轻量操作反馈，避免"点了没反应" -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!--
+    关键的一步：把后端数据「注入」到页面里。
+    tojson 过滤器会把 Python 的字典转成 JS 对象，并且自动转义 < > & 等字符，
+    所以数据里就算有人写 </script> 也没法把页面结构撑破 —— 这是安全的写法。
+    app.js 拿到 window.__BOOT__ 就能直接渲染，不用再多发一次请求。
+  -->
+  <script>window.__BOOT__ = {{ boot | tojson }};</script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
